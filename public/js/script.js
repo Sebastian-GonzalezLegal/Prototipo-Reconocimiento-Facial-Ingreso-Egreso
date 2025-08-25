@@ -99,20 +99,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    registerUserButton.addEventListener('click', () => {
+    registerUserButton.addEventListener('click', async () => {
         const opCode = opCodeInput.value, name = nameInput.value, dni = dniInput.value;
         if (!opCode || !name || !dni) return showMessage('Por favor, complete todos los campos.', 'error');
         if (!capturedDescriptor) return showMessage('Por favor, capture una foto primero.', 'error');
 
-        const users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-        if (users.some(user => user.opCode === opCode)) return showMessage('El código de operario ya está registrado.', 'error');
-        if (users.some(user => user.dni === dni)) return showMessage('El DNI ya está registrado.', 'error');
+        try {
+            const response = await fetch('/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    opCode,
+                    name,
+                    dni,
+                    descriptor: Array.from(capturedDescriptor)
+                })
+            });
 
-        users.push({ opCode, name, dni, descriptor: Array.from(capturedDescriptor) });
-        localStorage.setItem('registeredUsers', JSON.stringify(users));
-        showMessage(`Usuario ${name} registrado.`, 'success');
-        resetRegistrationForm();
-        showScreen('main-menu');
+            const result = await response.json();
+            if (response.ok) {
+                showMessage(result.message, 'success');
+                resetRegistrationForm();
+                showScreen('main-menu');
+            } else {
+                showMessage(result.message, 'error');
+            }
+        } catch (error) {
+            console.error('Error en el registro:', error);
+            showMessage('No se pudo conectar con el servidor.', 'error');
+        }
     });
 
     function resetRegistrationForm() {
@@ -147,39 +162,59 @@ document.addEventListener('DOMContentLoaded', () => {
             if (detections) {
                 const bestMatch = faceMatcher.findBestMatch(detections.descriptor);
                 if (bestMatch && bestMatch.label !== 'unknown') {
-                    handleSuccessfulLogin(bestMatch.label);
+                    handleSuccessfulLogin(bestMatch.label, faceMatcher.labeledDescriptors);
                 }
             }
         }, 1000);
     }
 
     async function getFaceMatcher() {
-        const users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-        if (users.length === 0) return null;
+        try {
+            const response = await fetch('/users');
+            if (!response.ok) {
+                showMessage('Error al cargar usuarios del servidor.', 'error');
+                return null;
+            }
+            const users = await response.json();
+            if (users.length === 0) return null;
 
-        const labeledDescriptors = users.map(user =>
-            new faceapi.LabeledFaceDescriptors(
-                user.opCode, // Usamos opCode como etiqueta única para identificar al usuario
-                [Float32Array.from(user.descriptor)]
-            )
-        );
-        return new faceapi.FaceMatcher(labeledDescriptors, 0.5);
+            const labeledDescriptors = users.map(user =>
+                new faceapi.LabeledFaceDescriptors(
+                    user.opCode,
+                    [Float32Array.from(Object.values(user.descriptor))]
+                )
+            );
+            return new faceapi.FaceMatcher(labeledDescriptors, 0.5);
+        } catch (error) {
+            console.error('Error al obtener usuarios:', error);
+            showMessage('No se pudo conectar con el servidor para cargar usuarios.', 'error');
+            return null;
+        }
     }
 
-    function handleSuccessfulLogin(opCode) {
+    function handleSuccessfulLogin(opCode, labeledDescriptors) {
         clearInterval(loginInterval);
         clearTimeout(loginTimeout);
         stopCamera(videoLogin);
 
-        const users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-        const user = users.find(u => u.opCode === opCode);
-
-        if (user) {
-            userNameSpan.textContent = user.name;
-            showScreen('access-permitted-screen');
-        } else {
-            showScreen('manual-login-screen');
-        }
+        // No necesitamos volver a buscar, el nombre se puede obtener del descriptor si lo adjuntamos.
+        // Pero para mantenerlo simple, buscamos el nombre en la lista que ya tenemos.
+        // O mejor, modificamos getFaceMatcher para que devuelva los usuarios también.
+        // Por ahora, lo dejamos así, pero no es lo más óptimo.
+        // Para una mejora, se podría hacer un fetch a /users/:opCode para obtener el nombre.
+        // Por simplicidad, vamos a buscar en el array de descriptores, aunque no tiene el nombre.
+        // La etiqueta (label) es el opCode, que es lo que necesitamos.
+        // Una mejor solución sería buscar el nombre del usuario con otro fetch o al cargar.
+        // Lo correcto es hacer un fetch para obtener los datos de nuevo.
+        fetch('/users').then(res => res.json()).then(users => {
+            const user = users.find(u => u.opCode === opCode);
+            if (user) {
+                userNameSpan.textContent = user.name;
+                showScreen('access-permitted-screen');
+            } else {
+                showScreen('manual-login-screen');
+            }
+        });
     }
 
     // --- Lógica de Inicio de Sesión Manual ---
@@ -187,21 +222,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const manualOpCodeInput = document.getElementById('manual-op-code');
     const manualDniInput = document.getElementById('manual-dni');
 
-    manualLoginButton.addEventListener('click', () => {
+    manualLoginButton.addEventListener('click', async () => {
         const opCode = manualOpCodeInput.value, dni = manualDniInput.value;
         if (!opCode || !dni) return showMessage('Por favor, complete todos los campos.', 'error');
 
-        const users = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-        const user = users.find(u => u.opCode === opCode && u.dni === dni);
+        try {
+            const response = await fetch('/users');
+            if (!response.ok) return showMessage('Error del servidor.', 'error');
 
-        if (user) {
-            userNameSpan.textContent = user.name;
-            showScreen('access-permitted-screen');
-        } else {
-            showScreen('access-denied-screen');
+            const users = await response.json();
+            const user = users.find(u => u.opCode === opCode && u.dni === dni);
+
+            if (user) {
+                userNameSpan.textContent = user.name;
+                showScreen('access-permitted-screen');
+            } else {
+                showScreen('access-denied-screen');
+            }
+        } catch (error) {
+            showMessage('No se pudo conectar con el servidor.', 'error');
+        } finally {
+            manualOpCodeInput.value = '';
+            manualDniInput.value = '';
         }
-        manualOpCodeInput.value = '';
-        manualDniInput.value = '';
     });
 
     // --- Event Listeners de Navegación ---
