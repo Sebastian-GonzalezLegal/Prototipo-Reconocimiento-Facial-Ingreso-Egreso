@@ -1,16 +1,145 @@
 body {
     margin: 0;
-    padding: 0;
+    padding: 20px;
     font-family: Arial, sans-serif;
-    background-color: #1d1d1d;
+    background-color: #f0f2f5;
     display: flex;
     align-items: center;
     justify-content: center;
+    min-height: 100vh;
+    color: #333;
+}
+
+.container {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+}
+
+h1, h2 {
+    color: #1c1e21;
+    margin-bottom: 20px;
+}
+
+/* Screen visibility */
+.screen {
+    display: none;
+}
+
+.screen.active {
+    display: block;
+}
+
+/* Camera and Canvas */
+.camera-container {
+    position: relative;
+    width: 320px;
+    height: 340px;
+    margin: 0 auto 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 canvas {
-    border: 2px solid #fff;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* Form elements */
+input[type="text"] {
+    width: calc(100% - 22px);
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    margin: 5px;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.back-button, .logout-button {
+    background-color: #6c757d;
+}
+
+.back-button:hover, .logout-button:hover {
+    background-color: #5a6268;
+}
+
+#capture-button {
+    background-color: #28a745;
+}
+
+#capture-button:hover {
+    background-color: #218838;
+}
+
+/* Status messages */
+.success {
+    color: #28a745;
+}
+
+.error {
+    color: #dc3545;
+}
+
+#login-status {
+    font-weight: bold;
+    margin-top: 15px;
+}
+
+/* Message Box */
+.message-box {
+    position: fixed;
+    top: -100px; /* Start off-screen */
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 15px 25px;
+    border-radius: 8px;
+    background-color: #333;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    transition: top 0.5s ease-in-out;
+    opacity: 0;
+}
+
+.message-box.show {
+    top: 20px;
+    opacity: 1;
+}
+
+.message-box.success {
+    background-color: #28a745;
+}
+
+.message-box.error {
+    background-color: #dc3545;
 }
