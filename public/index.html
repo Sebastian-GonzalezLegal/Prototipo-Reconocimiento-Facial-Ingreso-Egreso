@@ -13,7 +13,8 @@
         <div id="main-menu" class="screen active">
             <h1>Control de Acceso</h1>
             <button id="register-button">Registrarse</button>
-            <button id="login-button">Iniciar Sesión</button>
+            <button id="login-button">Registrar Ingreso</button>
+            <button id="logout-button">Registrar Egreso</button>
         </div>
 
         <!-- Pantalla de Registro -->
@@ -45,7 +46,7 @@
 
         <!-- Pantalla de Inicio de Sesión (Manual) -->
         <div id="manual-login-screen" class="screen">
-            <h2>Inicio de Sesión Manual</h2>
+            <h2>Registro de Ingreso Manual</h2>
             <p>No se pudo reconocer su rostro. Por favor, ingrese sus datos.</p>
             <input type="text" id="manual-op-code" placeholder="Código de Operario" required>
             <input type="text" id="manual-dni" placeholder="DNI" required>
@@ -53,19 +54,39 @@
             <button class="back-button">Volver</button>
         </div>
 
-        <!-- Pantalla de Acceso Permitido -->
+        <!-- Pantalla de Reconocimiento Existoso -->
         <div id="access-permitted-screen" class="screen">
-            <h2 class="success">Acceso Permitido</h2>
-            <p>Bienvenido/a, <span id="user-name"></span>.</p>
-            <button class="logout-button">Cerrar Sesión</button>
+            <h2 class="success">Reconocimiento Existoso</h2>
+            <p id="access-message"><span id="user-name"></span></p>
+            <button class="back-button">Volver</button>
         </div>
 
-        <!-- Pantalla de Acceso Denegado -->
+        <div id="manual-logout-screen" class="screen">
+            <h2>Registro de Egreso Manual</h2>
+            <p>No se pudo reconocer su rostro. Por favor, ingrese sus datos.</p>
+            <input type="text" id="manual-logout-op-code" placeholder="Código de Operario" required>
+            <input type="text" id="manual-logout-dni" placeholder="DNI" required>
+            <button id="manual-logout-button">Ingresar</button>
+            <button class="back-button">Volver</button>
+        </div>
+
+        <!-- Pantalla de Reconocimiento Frustrado -->
         <div id="access-denied-screen" class="screen">
-            <h2 class="error">Acceso Denegado</h2>
+            <h2 class="error">Reconocimiento Frustrado</h2>
             <p>Los datos ingresados son incorrectos o el usuario no está registrado.</p>
             <button class="logout-button">Volver a Intentar</button>
         </div>
+
+        <!-- Pantalla de Egreso (Facial) -->
+        <div id="logout-screen" class="screen">
+            <h2>Registrar Egreso</h2>
+            <p>Mire a la cámara para registrar su salida.</p>
+            <div class="camera-container">
+            <video id="video-logout" autoplay muted width="320" height="340"></video>
+            <p id="logout-status">Detectando...</p>
+            <button class="back-button">Volver</button>
+        </div>
+        
     </div>
 
     <!-- Scripts -->
