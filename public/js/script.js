@@ -92,7 +92,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Lógica de Registro ---
     captureButton.addEventListener('click', async () => {
         captureButton.textContent = 'Procesando...';
-        const detections = await faceapi.detectSingleFace(videoRegister, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+        
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        const detections = await faceapi.detectSingleFace(
+            videoRegister, 
+            new faceapi.TinyFaceDetectorOptions()
+        ).withFaceLandmarks().withFaceDescriptor();
+
         if (detections) {
             capturedDescriptor = detections.descriptor;
             captureButton.textContent = 'Foto Capturada ✓';
@@ -100,9 +107,11 @@ document.addEventListener('DOMContentLoaded', () => {
             showMessage('Foto capturada exitosamente.', 'success');
         } else {
             captureButton.textContent = 'Tomar Foto';
+            captureButton.style.backgroundColor = '#007bff';
             showMessage('No se detectó ningún rostro.', 'error');
         }
     });
+
 
     registerUserButton.addEventListener('click', async () => {
         const opCode = opCodeInput.value, name = nameInput.value, dni = dniInput.value;

@@ -124,8 +124,16 @@ input[type="text"]:focus {
     background-color: #55a630; 
 }
 
+
 .btn-success:hover {
     background-color: #4a8c2a;
+}
+
+.btn-capture {
+    background-color: #007bff; 
+}   
+.btn-capture:hover {
+    background-color: #024996;
 }
 
 .btn-tertiary {
