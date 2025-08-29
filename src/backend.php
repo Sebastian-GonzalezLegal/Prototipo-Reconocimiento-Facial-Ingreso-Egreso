@@ -1,6 +1,7 @@
 <?php
+date_default_timezone_set('America/Argentina/Buenos_Aires');
 $host = "localhost";
-$user = "root"; // por defecto en XAMPP
+$user = "root";
 $pass = "";
 $dbname = "reconocimiento";
 
@@ -17,7 +18,7 @@ if ($action === 'register') {
     $opCode = $_POST['opCode'];
     $name = $_POST['name'];
     $dni = $_POST['dni'];
-    $descriptor = $_POST['descriptor']; // JSON
+    $descriptor = $_POST['descriptor'];
 
     $stmt = $conn->prepare("INSERT INTO usuarios (opCode, name, dni, descriptor) VALUES (?, ?, ?, ?)");
     $stmt->bind_param("ssss", $opCode, $name, $dni, $descriptor);
@@ -33,15 +34,14 @@ if ($action === 'register') {
 if ($action === 'access') {
     $usuario_id = isset($_POST['usuario_id']) ? intval($_POST['usuario_id']) : 0;
     $accion     = isset($_POST['accion']) ? $_POST['accion'] : '';
-    $fecha_hora = isset($_POST['fecha_hora']) ? $_POST['fecha_hora'] : date('Y-m-d H:i:s');
 
     if (!$usuario_id || !$accion) {
         echo json_encode(array("status" => "error", "msg" => "Faltan datos para registrar acceso."));
         exit;
     }
 
-    $stmt = $conn->prepare("INSERT INTO accesos (usuario_id, accion, fecha_hora) VALUES (?, ?, ?)");
-    $stmt->bind_param("iss", $usuario_id, $accion, $fecha_hora);
+    $stmt = $conn->prepare("INSERT INTO accesos (usuario_id, accion) VALUES (?, ?)");
+    $stmt->bind_param("is", $usuario_id, $accion);
 
     if ($stmt->execute()) {
         echo json_encode(array("status" => "success"));
