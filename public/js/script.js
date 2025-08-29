@@ -366,7 +366,7 @@ async function startFacialLogout() {
         }
     }, 1000);
 
-    // Si no detecta rostro en 7 segundos, pasa a logout manual
+    // Si no detecta rostro en 5 segundos, pasa a logout manual
     let logoutTimeout = setTimeout(() => {
         clearInterval(logoutInterval);
         stopCamera(videoLogout);
@@ -445,6 +445,17 @@ function showAccessScreen(userName, type = 'ingreso') {
 
     showScreen('access-permitted-screen');
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  const toggleDarkMode = document.getElementById('dark-mode-toggle');
+
+  toggleDarkMode.addEventListener('click', () => {
+    document.body.classList.toggle('dark');
+    toggleDarkMode.textContent = document.body.classList.contains('dark') ? "☀️" : "🌙";
+  });
+});
+
+
 
 
     // --- Inicialización ---
