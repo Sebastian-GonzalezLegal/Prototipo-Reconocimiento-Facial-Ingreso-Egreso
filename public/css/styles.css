@@ -196,3 +196,8 @@ input[type="text"]:focus {
 .message-box.error {
     background-color: #dc3545;
 }
+
+a {
+    color: inherit;
+    text-decoration: none;  
+}
