@@ -53,6 +53,10 @@ $is_admin = isset($_SESSION['isAdmin']) && $_SESSION['isAdmin'] === true;
         <?php endif; ?>
 
     </div>
+    
+    <footer>
+        <p>&copy; 2025 Control de Ingreso/Egreso. Todos los derechos reservados.</p>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/admin.js"></script>
