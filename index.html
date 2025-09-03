@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Ingreso/Egreso</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div id="message-box" class="message-box"></div>
+    <div class="container">
+        <!-- Menu Principal -->
+        <div id="main-menu" class="screen active">
+            <div class="screen-content">
+                <h1>Control de Acceso</h1>
+                <div class="button-group">
+                    <button id="register-button" class="btn btn-primary">Registrarse</button>
+                    <button id="login-button" class="btn btn-secondary">Registrar Ingreso</button>
+                    <button id="logout-button" class="btn btn-secondary">Registrar Egreso</button>
+                    <button id="admin-button" class="btn btn-secondary"><a href="admin.php">Admin</a></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pantalla de registro -->
+        <div id="register-screen" class="screen">
+            <div class="screen-content">
+                <h2>Registro de Operario</h2>
+                <div class="camera-container">
+                    <video id="video-register" autoplay muted width="320" height="340"></video>
+                    <canvas id="canvas-register"></canvas>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="op-code" placeholder="Código de Operario" required>
+                    <input type="text" id="name" placeholder="Nombre Completo" required>
+                    <input type="text" id="dni" placeholder="DNI" required>
+                </div>
+                <div class="button-group">
+                    <button id="capture-button" class="btn btn-capture">Tomar Foto</button>
+                    <button id="register-user-button" class="btn btn-primary">Registrar</button>
+                    <button class="back-button btn btn-tertiary">Volver</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pantalla de Inicio de sesion -->
+        <div id="login-screen" class="screen">
+            <div class="screen-content">
+                <h2>Iniciar Sesión</h2>
+                <p>Mire a la cámara para el reconocimiento facial.</p>
+                <div class="camera-container">
+                    <video id="video-login" autoplay muted width="320" height="340"></video>
+                    <canvas id="canvas-login"></canvas>
+                </div>
+                <p id="login-status">Detectando...</p>
+                <button class="back-button btn btn-tertiary">Volver</button>
+            </div>
+        </div>
+
+        <!-- Pantalla de Inicio de sesion manual -->
+        <div id="manual-login-screen" class="screen">
+            <div class="screen-content">
+                <h2>Registro de Ingreso Manual</h2>
+                <p>No se pudo reconocer su rostro. Por favor, ingrese sus datos.</p>
+                <div class="form-group">
+                    <input type="text" id="manual-op-code" placeholder="Código de Operario" required>
+                    <input type="text" id="manual-dni" placeholder="DNI" required>
+                </div>
+                <div class="button-group">
+                    <button id="manual-login-button" class="btn btn-primary">Ingresar</button>
+                    <button class="back-button btn btn-tertiary">Volver</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pantalla de acceso permitido -->
+        <div id="access-permitted-screen" class="screen">
+            <div class="screen-content">
+                <h2 class="success">Reconocimiento Exitoso</h2>
+                <p id="access-message"><span id="user-name"></span></p>
+                <button class="back-button btn btn-tertiary">Volver</button>
+            </div>
+        </div>
+
+        <!-- Pantalla de ingreso manual -->
+        <div id="manual-logout-screen" class="screen">
+            <div class="screen-content">
+                <h2>Registro de Egreso Manual</h2>
+                <p>No se pudo reconocer su rostro. Por favor, ingrese sus datos.</p>
+                <div class="form-group">
+                    <input type="text" id="manual-logout-op-code" placeholder="Código de Operario" required>
+                    <input type="text" id="manual-logout-dni" placeholder="DNI" required>
+                </div>
+                <div class="button-group">
+                    <button id="manual-logout-button" class="btn btn-primary">Ingresar</button>
+                    <button class="back-button btn btn-tertiary">Volver</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pantalla de reconocimiento fallido -->
+        <div id="access-denied-screen" class="screen">
+            <div class="screen-content">
+                <h2 class="error">Reconocimiento Frustrado</h2>
+                <p>Los datos ingresados son incorrectos o el usuario no está registrado.</p>
+                <button class="logout-button btn btn-tertiary">Volver a Intentar</button>
+            </div>
+        </div>
+
+        <!--Pantalla de egreso -->
+        <div id="logout-screen" class="screen">
+            <div class="screen-content">
+                <h2>Registrar Egreso</h2>
+                <p>Mire a la cámara para registrar su salida.</p>
+                <div class="camera-container">
+                    <video id="video-logout" autoplay muted width="320" height="340"></video>
+                </div>
+                <p id="logout-status">Detectando...</p>
+                <button class="back-button btn btn-tertiary">Volver</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/face-api.min.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>

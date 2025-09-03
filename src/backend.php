@@ -11,24 +11,7 @@ if ($conn->connect_error) {
     die("Error de conexión: " . $conn->connect_error);
 }
 
-// --- Lógica de Migración Simple ---
-// Añadir columna 'rol' a 'usuarios'
-$result_rol = $conn->query("SHOW COLUMNS FROM `usuarios` LIKE 'rol'");
-if ($result_rol->num_rows == 0) {
-    $conn->query("ALTER TABLE `usuarios` ADD COLUMN `rol` VARCHAR(50) NOT NULL DEFAULT 'operario' AFTER `dni`");
-    $conn->query("UPDATE `usuarios` SET `rol` = 'admin' ORDER BY id ASC LIMIT 1");
-}
-// Añadir columnas 'tipo' y 'fecha_hora' a 'accesos'
-$result_tipo = $conn->query("SHOW COLUMNS FROM `accesos` LIKE 'tipo'");
-if ($result_tipo->num_rows == 0) {
-    $conn->query("ALTER TABLE `accesos` ADD COLUMN `tipo` VARCHAR(50) NOT NULL AFTER `accion`");
-}
-$result_fecha = $conn->query("SHOW COLUMNS FROM `accesos` LIKE 'fecha_hora'");
-if ($result_fecha->num_rows == 0) {
-    $conn->query("ALTER TABLE `accesos` ADD COLUMN `fecha_hora` DATETIME NOT NULL AFTER `tipo`");
-}
-// --- Fin de la Lógica de Migración ---
-
+$conn->query("SET time_zone = 'America/Argentina/Buenos_Aires'");
 
 session_start();
 $action = isset($_POST['action']) ? $_POST['action'] : '';
@@ -103,7 +86,7 @@ if (isset($_SESSION['isAdmin']) && $_SESSION['isAdmin'] === true) {
         $result = $conn->query($query);
         $data = ["labels" => [], "values" => []];
         while($row = $result->fetch_assoc()) {
-            $data['labels'][] = ucfirst($row['tipo']); // Capitalize first letter
+            $data['labels'][] = ucfirst($row['tipo']);
             $data['values'][] = $row['total'];
         }
         echo json_encode(["status" => "success", "data" => $data]);
