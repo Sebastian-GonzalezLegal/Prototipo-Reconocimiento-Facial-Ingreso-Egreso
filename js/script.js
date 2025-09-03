@@ -303,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Carga de Modelos Face API ---
     async function loadFaceApiModels() {
-        const MODEL_URL = 'https://sebastian-gonzalezlegal.github.io/Prototipo-Reconocimiento-Facial-Ingreso-Egreso/public/models';
+        const MODEL_URL = './models';
         try {
             console.log('Cargando modelos de face-api...');
             await Promise.all([
