@@ -22,6 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let modelsLoaded = false;
     let accessLogsChart = null;
     let accessTypeChart = null;
+    let hoursWorkedChart = null;
+    let arrivalDistributionChart = null;
+    let departureDistributionChart = null;
     const chartTextColor = '#e0e0e0';
 
     // ===== FUNCIONES =====
@@ -42,13 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showMessage(text, type = 'info', duration = 3000) {
-        const messageBox = document.getElementById('message-box');
-        if (!messageBox) return;
-        messageBox.textContent = text;
-        messageBox.className = 'message-box show';
-        if (type === 'success') messageBox.classList.add('success');
-        if (type === 'error') messageBox.classList.add('error');
-        setTimeout(() => messageBox.classList.remove('show'), duration);
+        alert(`[${type.toUpperCase()}] ${text}`);
     }
 
     function startCamera(videoEl) {
@@ -133,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ===== NAVEGACIÓN REGISTRO <-> GRÁFICOS =====
+    // ===== NAVEGACIÓN REGISTRO =====
     if (registerButton) {
         registerButton.addEventListener('click', () => showScreen('register-screen'));
     }
@@ -154,7 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
             modelsLoaded = true;
         } catch (err) {
             console.error('Error al cargar modelos:', err);
-            showMessage('Error al cargar modelos de IA.', 'error', 5000);
         }
     }
     loadFaceApiModels();
@@ -168,9 +164,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: new URLSearchParams({ action: 'getAccessLogsPerDay' })
             });
             const logsData = await logsRes.json();
-
             if (logsData.status === 'success') {
-                const ctx = document.getElementById('access-logs-chart').getContext('2d');
+                const ctx = document.getElementById('acceso-por-dia').getContext('2d');
                 if (accessLogsChart) accessLogsChart.destroy();
                 accessLogsChart = new Chart(ctx, {
                     type: 'bar',
@@ -182,24 +177,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         ]
                     },
                     options: {
-                        scales: {
-                            y: { beginAtZero: true, ticks: { color: chartTextColor } },
-                            x: { ticks: { color: chartTextColor } }
-                        },
+                        scales: { y: { beginAtZero: true, ticks: { color: chartTextColor } }, x: { ticks: { color: chartTextColor } } },
                         plugins: { legend: { labels: { color: chartTextColor } } }
                     }
                 });
             }
 
+            // Access Type
             const typeRes = await fetch('src/backend.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: new URLSearchParams({ action: 'getAccessLogsByType' })
             });
             const typeData = await typeRes.json();
-
             if (typeData.status === 'success') {
-                const ctx = document.getElementById('access-type-chart').getContext('2d');
+                const ctx = document.getElementById('acceso-por-tipo').getContext('2d');
                 if (accessTypeChart) accessTypeChart.destroy();
                 accessTypeChart = new Chart(ctx, {
                     type: 'doughnut',
@@ -215,7 +207,90 @@ document.addEventListener('DOMContentLoaded', () => {
                     options: { plugins: { legend: { labels: { color: chartTextColor } } } }
                 });
             }
-        } catch (err) { console.error('Error renderizando gráficos:', err); }
+
+            // Horas Trabajadas
+            const hoursRes = await fetch('src/backend.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ action: 'getHoursWorkedPerDay' })
+            });
+            const hoursData = await hoursRes.json();
+            if (hoursData.status === 'success') {
+                const ctx = document.getElementById('horas-trabajadas').getContext('2d');
+                if (hoursWorkedChart) hoursWorkedChart.destroy();
+                hoursWorkedChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: hoursData.data.labels,
+                        datasets: hoursData.data.datasets
+                    },
+                    options: {
+                        scales: { y: { beginAtZero: true, ticks: { color: chartTextColor } }, x: { ticks: { color: chartTextColor } } },
+                        plugins: {
+                            legend: { labels: { color: chartTextColor } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) { label += ': '; }
+                                        if (context.parsed.y !== null) { label += context.parsed.y.toFixed(2) + ' horas'; }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Distribución de Llegadas
+            const arrivalRes = await fetch('src/backend.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ action: 'getArrivalDistribution' })
+            });
+            const arrivalData = await arrivalRes.json();
+            if (arrivalData.status === 'success') {
+                const ctx = document.getElementById('horarios-llegada').getContext('2d');
+                if (arrivalDistributionChart) arrivalDistributionChart.destroy();
+                arrivalDistributionChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: arrivalData.data.labels,
+                        datasets: [{ label: 'Cantidad de Empleados', data: arrivalData.data.values, backgroundColor: 'rgba(255, 159, 64, 0.5)', fill: true }]
+                    },
+                    options: {
+                        scales: { y: { beginAtZero: true, ticks: { color: chartTextColor, stepSize: 1 } }, x: { ticks: { color: chartTextColor } } },
+                        plugins: { legend: { labels: { color: chartTextColor } } }
+                    }
+                });
+            }
+
+            // Distribución de Salidas
+            const departureRes = await fetch('src/backend.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ action: 'getDepartureDistribution' })
+            });
+            const departureData = await departureRes.json();
+            if (departureData.status === 'success') {
+                const ctx = document.getElementById('horarios-salida').getContext('2d');
+                if (departureDistributionChart) departureDistributionChart.destroy();
+                departureDistributionChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: departureData.data.labels,
+                        datasets: [{ label: 'Cantidad de Empleados', data: departureData.data.values, backgroundColor: 'rgba(201, 203, 207, 0.5)', fill: true }]
+                    },
+                    options: {
+                        scales: { y: { beginAtZero: true, ticks: { color: chartTextColor, stepSize: 1 } }, x: { ticks: { color: chartTextColor } } },
+                        plugins: { legend: { labels: { color: chartTextColor } } }
+                    }
+                });
+            }
+        } catch (err) {
+            console.error('Error renderizando gráficos:', err);
+        }
     }
 
     // ===== LOGIN =====
@@ -231,8 +306,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: new URLSearchParams({ action: 'adminLogin', opCode, dni })
                 });
                 const data = await res.json();
-                if (data.status === 'success') location.reload();
-                else adminLoginError.textContent = data.msg || 'Error en login.';
+                if (data.status === 'success') {
+                    location.reload();
+                } else {
+                    adminLoginError.textContent = data.msg || 'Error en login.';
+                }
             } catch (err) {
                 console.error(err);
                 adminLoginError.textContent = 'Error de conexión.';
@@ -250,7 +328,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: new URLSearchParams({ action: 'adminLogout' })
                 });
                 location.reload();
-            } catch (err) { console.error('Error al cerrar sesión:', err); }
+            } catch (err) {
+                console.error('Error al cerrar sesión:', err);
+            }
         });
     }
 

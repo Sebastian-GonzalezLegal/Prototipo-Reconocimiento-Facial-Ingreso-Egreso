@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutStatus = document.getElementById('logout-status');
 
     // Botones
-
     const loginButton = document.getElementById('login-button');
     const backButtons = document.querySelectorAll('.back-button');
     const logoutButtons = document.querySelectorAll('.logout-button');
@@ -156,12 +155,16 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(res => res.json())
         .then(users => {
             const user = users.find(u => u.opCode === opCode);
-        if (user) {
-            userNameSpan.textContent = user.name;
-            showAccessScreen(user.name, 'ingreso'); // tipo ingreso
-            registerAccess(user.id, 'facial', 'ingreso');
-        }
-        else {
+            if (user) {
+                userNameSpan.textContent = user.name;
+                registerAccess(user.id, 'facial', 'ingreso').then(success => {
+                    if (success) {
+                        showAccessScreen(user.name, 'ingreso');
+                    } else {
+                        showScreen('main-menu');
+                    }
+                });
+            } else {
                 showScreen('manual-login-screen');
             }
         });
@@ -182,14 +185,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (user) {
             userNameSpan.textContent = user.name;
-            showScreen('access-permitted-screen');
-        } else {
-            showScreen('access-denied-screen');
-        }
-        if (user) {
-            userNameSpan.textContent = user.name;
-            showAccessScreen(user.name, 'ingreso'); // tipo ingreso
-            registerAccess(user.id, 'manual', 'ingreso');
+            registerAccess(user.id, 'manual', 'ingreso').then(success => {
+                if (success) {
+                    showAccessScreen(user.name, 'ingreso');
+                } else {
+                    showScreen('main-menu');
+                }
+            });
         } else {
             showScreen('access-denied-screen');
         }
@@ -224,138 +226,151 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Registro de Accesos ---
-async function registerAccess(usuario_id, tipo = 'manual', accion = 'ingreso') {
-    try {
+    async function registerAccess(usuario_id, tipo = 'manual', accion = 'ingreso') {
+        try {
+            const response = await fetch('src/backend.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    action: 'access',
+                    usuario_id: usuario_id,
+                    tipo: tipo,
+                    accion: accion,
+                    fecha_hora: new Date().toISOString()
+                })
+            });
+
+            const data = await response.json();
+            if (data.status === 'success') {
+                showMessage(data.msg, 'success');
+                return true;
+            } else {
+                showMessage(data.msg, 'error');
+                return false;
+            }
+        } catch (err) {
+            console.error('Error de conexión al registrar acceso:', err);
+            showMessage('Error de conexión con el servidor.', 'error');
+            return false;
+        }
+    }
+
+    logoutMenuButton.addEventListener('click', () => showScreen('logout-screen'));
+
+    async function startFacialLogout() {
+        logoutStatus.textContent = 'Iniciando cámara...';
+        if (!(await startCamera(videoLogout))) return showScreen('manual-logout-screen');
+
+        logoutStatus.textContent = 'Cargando usuarios...';
+        const faceMatcher = await getFaceMatcher();
+        if (!faceMatcher) {
+            logoutStatus.textContent = 'No hay usuarios registrados.';
+            return showScreen('manual-logout-screen');
+        }
+
+        logoutStatus.textContent = 'Detectando...';
+
+        let logoutInterval = setInterval(async () => {
+            const detections = await faceapi.detectSingleFace(videoLogout, new faceapi.TinyFaceDetectorOptions())
+                .withFaceLandmarks().withFaceDescriptor();
+
+            if (detections) {
+                const bestMatch = faceMatcher.findBestMatch(detections.descriptor);
+                if (bestMatch && bestMatch.label !== 'unknown') {
+                    clearInterval(logoutInterval);
+                    clearTimeout(logoutTimeout);
+                    stopCamera(videoLogout);
+                    handleLogout(bestMatch.label);
+                }
+            }
+        }, 1000);
+
+        // Si no detecta rostro en 5 segundos, pasa a logout manual
+        let logoutTimeout = setTimeout(() => {
+            clearInterval(logoutInterval);
+            stopCamera(videoLogout);
+            showScreen('manual-logout-screen');
+        }, 5000);
+    }
+
+
+    function handleLogout(opCode) {
+        fetch('src/backend.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ action: 'getUsers' })
+        })
+        .then(res => res.json())
+        .then(users => {
+            const user = users.find(u => u.opCode === opCode);
+            if (user) {
+                registerAccess(user.id, 'facial', 'egreso').then(success => {
+                    if (success) {
+                        showAccessScreen(user.name, 'egreso');
+                    } else {
+                        showScreen('main-menu');
+                    }
+                });
+            }
+        });
+    }
+
+    manualLogoutButton.addEventListener('click', async () => {
+        const opCode = manualLogoutOpCodeInput.value;
+        const dni = manualLogoutDniInput.value;
+        if (!opCode || !dni) return showMessage('Por favor, complete todos los campos.', 'error');
+
         const response = await fetch('src/backend.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                action: 'access',
-                usuario_id: usuario_id,
-                tipo: tipo,
-                accion: accion,
-                fecha_hora: new Date().toISOString()
-            })
+            body: new URLSearchParams({ action: 'getUsers' })
         });
+        const users = await response.json();
+        const user = users.find(u => u.opCode === opCode && u.dni === dni);
 
-        const data = await response.json();
-        if (data.status === 'success') {
-            console.log(`Acceso registrado: ${accion} para usuario ${usuario_id}`);
-        } else {
-            console.error('Error registrando acceso:', data.msg);
-        }
-    } catch (err) {
-        console.error('Error de conexión al registrar acceso:', err);
-    }
-}
-
-logoutMenuButton.addEventListener('click', () => showScreen('logout-screen'));
-
-async function startFacialLogout() {
-    logoutStatus.textContent = 'Iniciando cámara...';
-    if (!(await startCamera(videoLogout))) return showScreen('manual-logout-screen');
-
-    logoutStatus.textContent = 'Cargando usuarios...';
-    const faceMatcher = await getFaceMatcher();
-    if (!faceMatcher) {
-        logoutStatus.textContent = 'No hay usuarios registrados.';
-        return showScreen('manual-logout-screen');
-    }
-
-    logoutStatus.textContent = 'Detectando...';
-
-    let logoutInterval = setInterval(async () => {
-        const detections = await faceapi.detectSingleFace(videoLogout, new faceapi.TinyFaceDetectorOptions())
-            .withFaceLandmarks().withFaceDescriptor();
-
-        if (detections) {
-            const bestMatch = faceMatcher.findBestMatch(detections.descriptor);
-            if (bestMatch && bestMatch.label !== 'unknown') {
-                clearInterval(logoutInterval);
-                clearTimeout(logoutTimeout);
-                stopCamera(videoLogout);
-                handleLogout(bestMatch.label);
-            }
-        }
-    }, 1000);
-
-    // Si no detecta rostro en 5 segundos, pasa a logout manual
-    let logoutTimeout = setTimeout(() => {
-        clearInterval(logoutInterval);
-        stopCamera(videoLogout);
-        showScreen('manual-logout-screen');
-    }, 5000);
-}
-
-
-function handleLogout(opCode) {
-    fetch('src/backend.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ action: 'getUsers' })
-    })
-    .then(res => res.json())
-    .then(users => {
-        const user = users.find(u => u.opCode === opCode);
         if (user) {
-            userNameSpan.textContent = user.name;
-            showAccessScreen(user.name, 'egreso');
-            registerAccess(user.id, 'facial', 'egreso');
+            registerAccess(user.id, 'manual', 'egreso').then(success => {
+                if (success) {
+                    showAccessScreen(user.name, 'egreso');
+                } else {
+                    showScreen('main-menu');
+                }
+            });
+        } else {
+            showScreen('access-denied-screen');
         }
+
+        manualLogoutOpCodeInput.value = '';
+        manualLogoutDniInput.value = '';
     });
-}
 
-manualLogoutButton.addEventListener('click', async () => {
-    const opCode = manualLogoutOpCodeInput.value;
-    const dni = manualLogoutDniInput.value;
-    if (!opCode || !dni) return showMessage('Por favor, complete todos los campos.', 'error');
 
-    const response = await fetch('src/backend.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ action: 'getUsers' })
-    });
-    const users = await response.json();
-    const user = users.find(u => u.opCode === opCode && u.dni === dni);
+    function showScreen(screenId) {
+        screens.forEach(screen => screen.classList.remove('active'));
+        const screenToShow = document.getElementById(screenId);
+        if (screenToShow) screenToShow.classList.add('active');
 
-    if (user) {
-        showAccessScreen(user.name, 'egreso');
-        registerAccess(user.id, 'manual', 'egreso');
-    } else {
-        showScreen('access-denied-screen');
+        stopCamera(videoLogin);
+        stopCamera(videoLogout);
+        clearInterval(loginInterval);
+        clearTimeout(loginTimeout);
+
+        if (screenId === 'login-screen') startFacialLogin();
+        if (screenId === 'logout-screen') startFacialLogout();
     }
 
-    manualLogoutOpCodeInput.value = '';
-    manualLogoutDniInput.value = '';
-});
+    function showAccessScreen(userName, type = 'ingreso') {
+        userNameSpan.textContent = userName;
+        const accessMessage = document.getElementById('access-message');
 
+        if (type === 'ingreso') {
+            accessMessage.textContent = `Bienvenido/a, ${userName}.`;
+        } else if (type === 'egreso') {
+            accessMessage.textContent = `Salida registrada para ${userName}. ¡Que tengas buen día!`;
+        }
 
-function showScreen(screenId) {
-    screens.forEach(screen => screen.classList.remove('active'));
-    const screenToShow = document.getElementById(screenId);
-    if (screenToShow) screenToShow.classList.add('active');
-
-    stopCamera(videoLogin);
-    stopCamera(videoLogout);
-    clearInterval(loginInterval);
-    clearTimeout(loginTimeout);
-
-    if (screenId === 'login-screen') startFacialLogin();
-    if (screenId === 'logout-screen') startFacialLogout();
-}
-
-function showAccessScreen(userName, type = 'ingreso') {
-    userNameSpan.textContent = userName;
-    const accessMessage = document.getElementById('access-message');
-
-    if (type === 'ingreso') {
-        accessMessage.textContent = `Bienvenido/a, ${userName}.`;
-    } else if (type === 'egreso') {
-        accessMessage.textContent = `Salida registrada para ${userName}. ¡Que tengas buen día!`;
+        showScreen('access-permitted-screen');
     }
-
-    showScreen('access-permitted-screen');
-}
 
     // --- Lógica de Cámara ---
     async function startCamera(videoEl) {
@@ -380,8 +395,6 @@ function showAccessScreen(userName, type = 'ingreso') {
             videoEl.srcObject = null;
         }
     }
-
-
     // --- Inicialización ---
     loadFaceApiModels();
     showScreen('main-menu');

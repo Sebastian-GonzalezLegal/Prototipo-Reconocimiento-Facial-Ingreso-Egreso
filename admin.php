@@ -25,12 +25,27 @@ $is_admin = isset($_SESSION['isAdmin']) && $_SESSION['isAdmin'] === true;
 
             <div class="chart-container">
                 <h2>Registros de Acceso por Día</h2>
-                <canvas id="access-logs-chart"></canvas>
+                <canvas id="acceso-por-dia"></canvas>
             </div>
 
             <div class="chart-container">
                 <h2>Tipo de Acceso (Facial vs. Manual)</h2>
-                <canvas id="access-type-chart"></canvas>
+                <canvas id="acceso-por-tipo"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <h2>Horas Trabajadas por Empleado y Día</h2>
+                <canvas id="horas-trabajadas"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <h2>Distribución de Horarios de Llegada</h2>
+                <canvas id="horarios-llegada"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <h2>Distribución de Horarios de Salida</h2>
+                <canvas id="horarios-salida"></canvas>
             </div>
         </div>
 
