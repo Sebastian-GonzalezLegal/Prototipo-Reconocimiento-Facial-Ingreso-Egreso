@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Elementos del DOM ---
     const screens = document.querySelectorAll('.screen');
-    const videoRegister = document.getElementById('video-register');
     const videoLogin = document.getElementById('video-login');
     const loginStatus = document.getElementById('login-status');
     const userNameSpan = document.getElementById('user-name');
@@ -10,12 +9,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutStatus = document.getElementById('logout-status');
 
     // Botones
-    const registerButton = document.getElementById('register-button');
+
     const loginButton = document.getElementById('login-button');
     const backButtons = document.querySelectorAll('.back-button');
     const logoutButtons = document.querySelectorAll('.logout-button');
-    const captureButton = document.getElementById('capture-button');
-    const registerUserButton = document.getElementById('register-user-button');
     const manualLoginButton = document.getElementById('manual-login-button');
     const logoutMenuButton = document.getElementById('logout-button');
     const manualLogoutButton = document.getElementById('manual-logout-button');
@@ -24,9 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // Inputs
-    const opCodeInput = document.getElementById('op-code');
-    const nameInput = document.getElementById('name');
-    const dniInput = document.getElementById('dni');
     const manualOpCodeInput = document.getElementById('manual-op-code');
     const manualDniInput = document.getElementById('manual-dni');
 
@@ -56,99 +50,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const screenToShow = document.getElementById(screenId);
         if (screenToShow) screenToShow.classList.add('active');
 
-        stopCamera(videoRegister);
         stopCamera(videoLogin);
         clearInterval(loginInterval);
         clearTimeout(loginTimeout);
 
-        if (screenId === 'register-screen') startCamera(videoRegister);
         if (screenId === 'login-screen') startFacialLogin();
-    }
-
-    // --- Lógica de Cámara ---
-    async function startCamera(videoEl) {
-        if (!modelsLoaded) {
-            showMessage('Modelos de IA cargando, espere.', 'info');
-            return false;
-        }
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
-            videoEl.srcObject = stream;
-            return true;
-        } catch (err) {
-            console.error("Error al acceder a la cámara:", err);
-            showMessage("No se pudo acceder a la cámara.", 'error');
-            return false;
-        }
-    }
-
-    function stopCamera(videoEl) {
-        if (videoEl && videoEl.srcObject) {
-            videoEl.srcObject.getTracks().forEach(track => track.stop());
-            videoEl.srcObject = null;
-        }
-    }
-
-    // --- Lógica de Registro ---
-    captureButton.addEventListener('click', async () => {
-        captureButton.textContent = 'Procesando...';
-        
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        const detections = await faceapi.detectSingleFace(
-            videoRegister, 
-            new faceapi.TinyFaceDetectorOptions()
-        ).withFaceLandmarks().withFaceDescriptor();
-
-        if (detections) {
-            capturedDescriptor = detections.descriptor;
-            captureButton.textContent = 'Foto Capturada ✓';
-            captureButton.style.backgroundColor = '#28a745';
-            showMessage('Foto capturada exitosamente.', 'success');
-        } else {
-            captureButton.textContent = 'Tomar Foto';
-            captureButton.style.backgroundColor = '#007bff';
-            showMessage('No se detectó ningún rostro.', 'error');
-        }
-    });
-
-
-    registerUserButton.addEventListener('click', async () => {
-        const opCode = opCodeInput.value, name = nameInput.value, dni = dniInput.value;
-        if (!opCode || !name || !dni) return showMessage('Por favor, complete todos los campos.', 'error');
-        if (!capturedDescriptor) return showMessage('Por favor, capture una foto primero.', 'error');
-
-        try {
-            const response = await fetch('src/backend.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({
-                    action: 'register',
-                    opCode,
-                    name,
-                    dni,
-                    descriptor: JSON.stringify(Array.from(capturedDescriptor))
-                })
-            });
-            const data = await response.json();
-            if (data.status === 'success') {
-                showMessage(`Usuario ${name} registrado.`, 'success');
-                resetRegistrationForm();
-                showScreen('main-menu');
-            } else {
-                showMessage('Error al registrar usuario: ' + data.msg, 'error');
-            }
-        } catch (err) {
-            console.error(err);
-            showMessage('Error de conexión al servidor.', 'error');
-        }
-    });
-
-    function resetRegistrationForm() {
-        opCodeInput.value = ''; nameInput.value = ''; dniInput.value = '';
-        capturedDescriptor = null;
-        captureButton.textContent = 'Tomar Foto';
-        captureButton.style.backgroundColor = '#007bff';
     }
 
     // --- Lógica de Inicio de Sesión Facial ---
@@ -293,11 +199,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Event Listeners de Navegación ---
-    registerButton.addEventListener('click', () => showScreen('register-screen'));
     loginButton.addEventListener('click', () => showScreen('login-screen'));
     backButtons.forEach(button => button.addEventListener('click', () => {
         showScreen('main-menu');
-        resetRegistrationForm();
     }));
     logoutButtons.forEach(button => button.addEventListener('click', () => showScreen('main-menu')));
 
@@ -431,13 +335,11 @@ function showScreen(screenId) {
     const screenToShow = document.getElementById(screenId);
     if (screenToShow) screenToShow.classList.add('active');
 
-    stopCamera(videoRegister);
     stopCamera(videoLogin);
     stopCamera(videoLogout);
     clearInterval(loginInterval);
     clearTimeout(loginTimeout);
 
-    if (screenId === 'register-screen') startCamera(videoRegister);
     if (screenId === 'login-screen') startFacialLogin();
     if (screenId === 'logout-screen') startFacialLogout();
 }
@@ -455,16 +357,29 @@ function showAccessScreen(userName, type = 'ingreso') {
     showScreen('access-permitted-screen');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const toggleDarkMode = document.getElementById('dark-mode-toggle');
+    // --- Lógica de Cámara ---
+    async function startCamera(videoEl) {
+        if (!modelsLoaded) {
+            showMessage('Modelos de IA cargando, espere.', 'info');
+            return false;
+        }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+            videoEl.srcObject = stream;
+            return true;
+        } catch (err) {
+            console.error("Error al acceder a la cámara:", err);
+            showMessage("No se pudo acceder a la cámara.", 'error');
+            return false;
+        }
+    }
 
-  toggleDarkMode.addEventListener('click', () => {
-    document.body.classList.toggle('dark');
-    toggleDarkMode.textContent = document.body.classList.contains('dark') ? "☀️" : "🌙";
-  });
-});
-
-
+    function stopCamera(videoEl) {
+        if (videoEl && videoEl.srcObject) {
+            videoEl.srcObject.getTracks().forEach(track => track.stop());
+            videoEl.srcObject = null;
+        }
+    }
 
 
     // --- Inicialización ---

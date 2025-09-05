@@ -10,7 +10,7 @@ $is_admin = isset($_SESSION['isAdmin']) && $_SESSION['isAdmin'] === true;
     <title>Panel de Administrador</title>
     <link rel="stylesheet" href="css/admin.css">
 </head>
-<body>
+<body class="<?php echo $is_admin ? 'panel' : 'login'; ?>">
     <div class="admin-container">
 
         <?php if ($is_admin): ?>
@@ -18,9 +18,9 @@ $is_admin = isset($_SESSION['isAdmin']) && $_SESSION['isAdmin'] === true;
         <!-- Contenido del Panel (si la sesión es de admin) -->
         <div id="panel-container">
             <div class="admin-header">
-                <a href="index.html" class="nav-link">← Volver al Menú</a>
+                <button id="register-button" class="btn btn-primary btn-register">Registrar Operario</button>
                 <h1>Panel de Administrador</h1>
-                <button id="admin-logout-button" class="nav-link">Cerrar Sesión</button>
+                <button id="admin-logout-button" class="btn btn-primary">Cerrar Sesión</button>
             </div>
 
             <div class="chart-container">
@@ -31,6 +31,27 @@ $is_admin = isset($_SESSION['isAdmin']) && $_SESSION['isAdmin'] === true;
             <div class="chart-container">
                 <h2>Tipo de Acceso (Facial vs. Manual)</h2>
                 <canvas id="access-type-chart"></canvas>
+            </div>
+        </div>
+
+                <!-- Pantalla de registro -->
+        <div id="register-screen" class="screen">
+            <div class="screen-content">
+                <h2>Registro de Operario</h2>
+                <div class="camera-container">
+                    <video id="video-register" autoplay muted width="320" height="340"></video>
+                    <canvas id="canvas-register" class="canvasregister"></canvas>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="op-code" placeholder="Código de Operario" required>
+                    <input type="text" id="name" placeholder="Nombre Completo" required>
+                    <input type="text" id="dni" placeholder="DNI" required>
+                </div>
+                <div class="button-group">
+                    <button id="capture-button" class="btn btn-capture">Tomar Foto</button>
+                    <button id="register-user-button" class="btn btn-primary">Registrar</button>
+                    <button class="back-button btn btn-tertiary">Volver</button>
+                </div>
             </div>
         </div>
 
@@ -45,7 +66,6 @@ $is_admin = isset($_SESSION['isAdmin']) && $_SESSION['isAdmin'] === true;
             </div>
             <div class="button-group">
                 <button id="admin-login-button" class="btn btn-primary">Ingresar</button>
-                <button class="btn btn-secondary"><a href="index.html" class="btn btn-tertiary">Volver</a></button
             </div>
             <p id="admin-login-error" style="color: red; margin-top: 10px;"></p>
         </div>
@@ -59,6 +79,7 @@ $is_admin = isset($_SESSION['isAdmin']) && $_SESSION['isAdmin'] === true;
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/face-api.min.js"></script>
     <script src="js/admin.js"></script>
 </body>
 </html>
