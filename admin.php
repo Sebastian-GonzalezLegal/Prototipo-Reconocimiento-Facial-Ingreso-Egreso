@@ -54,7 +54,7 @@ $is_admin = isset($_SESSION['isAdmin']) && $_SESSION['isAdmin'] === true;
             <div class="screen-content">
                 <h2>Registro de Operario</h2>
                 <div class="camera-container">
-                    <video id="video-register" autoplay muted width="320" height="340"></video>
+                    <video id="video-register" autoplay muted playsinline width="320" height="340"></video>
                     <canvas id="canvas-register" class="canvasregister"></canvas>
                 </div>
                 <div class="form-group">
