@@ -12,7 +12,7 @@ Este proyecto es un prototipo funcional de un sistema de control de acceso que u
     -   **Visualización de Datos Mejorada:** Incluye gráficos interactivos para un análisis completo:
         -   Registros de acceso por día (ingresos vs. egresos).
         -   Proporción de accesos faciales vs. manuales.
-        -   **Nuevo:** Horas trabajadas por operario en un día específico.
+        -   **Nuevo:** Horas trabajadas por operario (calculadas a partir de la diferencia entre el ingreso y el egreso del mismo registro).
         -   **Nuevo:** Distribución de horarios de llegada para analizar la puntualidad.
         -   **Nuevo:** Distribución de horarios de salida.
 
@@ -65,9 +65,10 @@ Siga estos pasos para configurar y ejecutar el proyecto en su entorno local.
     CREATE TABLE `accesos` (
       `id` int(11) NOT NULL AUTO_INCREMENT,
       `usuario_id` int(11) NOT NULL,
-      `accion` enum('ingreso','egreso') NOT NULL,
-      `tipo` enum('facial','manual') NOT NULL,
-      `fecha_hora` datetime NOT NULL,
+      `fecha_hora_ingreso` datetime NOT NULL,
+      `fecha_hora_egreso` datetime DEFAULT NULL,
+      `tipo_ingreso` enum('facial','manual') NOT NULL,
+      `tipo_egreso` enum('facial','manual') DEFAULT NULL,
       PRIMARY KEY (`id`),
       KEY `usuario_id` (`usuario_id`),
       CONSTRAINT `accesos_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
@@ -109,10 +110,15 @@ Siga estos pasos para configurar y ejecutar el proyecto en su entorno local.
 ## ⚙️ ¿Cómo Funciona?
 
 ### Flujo del Operario: Fichaje de Ingreso/Egreso
-1.  El operario accede a `index.html` y elige si desea registrar un ingreso o un egreso.
-2.  La aplicación activa la cámara y utiliza `face-api.js` para buscar una coincidencia facial contra los descriptores de los usuarios registrados en la base de datos.
-3.  Si encuentra una coincidencia con una confianza suficiente, identifica al operario y envía una petición al backend para registrar el acceso (`ingreso` o `egreso`) en la tabla `accesos`.
-4.  Si el reconocimiento facial falla tras unos segundos, el sistema redirige automáticamente a una pantalla para el registro manual, donde el operario puede identificarse con su código y DNI.
+1.  El operario interactúa con la interfaz principal (`index.html`) para registrar un **ingreso** o un **egreso**.
+2.  La aplicación utiliza `face-api.js` para identificar al operario a través de la cámara. Si falla, se ofrece un método de login manual.
+3.  **Al registrar un ingreso:**
+    -   El sistema verifica que el operario no tenga un ingreso previo sin su correspondiente egreso.
+    -   Si todo es correcto, se **inserta una nueva fila** en la tabla `accesos`, rellenando `usuario_id`, `fecha_hora_ingreso` y `tipo_ingreso`. El campo `fecha_hora_egreso` se deja en `NULL`.
+4.  **Al registrar un egreso:**
+    -   El sistema busca la última fila de `accesos` para ese operario donde `fecha_hora_egreso` sea `NULL`.
+    -   Si la encuentra, **actualiza esa misma fila**, rellenando `fecha_hora_egreso` y `tipo_egreso`.
+    -   Si no la encuentra, significa que el operario nunca registró su ingreso, por lo que se muestra un error.
 
 ### Flujo del Administrador: Gestión y Estadísticas
 1.  **Login de Administrador:** El administrador navega a `admin.php` e inicia sesión utilizando su código de operario y DNI (previamente configurado en la base de datos con el rol `admin`).
@@ -126,4 +132,3 @@ Siga estos pasos para configurar y ejecutar el proyecto en su entorno local.
     -   **Tipo de Acceso:** Un gráfico de dona que muestra el porcentaje de fichajes realizados por reconocimiento facial frente a los manuales.
     -   **Horas Trabajadas:** Un gráfico de barras que desglosa las horas trabajadas por cada empleado en la jornada actual.
     -   **Distribución de Llegadas/Salidas:** Gráficos de línea que muestran a qué horas se concentran los ingresos y egresos, permitiendo analizar patrones de puntualidad y ausentismo.
-
