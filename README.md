@@ -4,11 +4,17 @@ Este proyecto es un prototipo funcional de un sistema de control de acceso que u
 
 ## ✨ Características
 
--   **Registro de Operarios:** Los nuevos operarios pueden registrarse proporcionando sus datos (código de operario, nombre, DNI) y capturando una foto de su rostro.
--   **Reconocimiento Facial:** Utiliza la cámara del dispositivo para identificar al operario y registrar su ingreso o egreso de forma automática.
--   **Registro Manual:** Si el reconocimiento facial falla, el sistema ofrece la opción de registrar el ingreso/egreso manualmente introduciendo el código de operario y el DNI.
--   **Panel de Administración:** Una sección protegida por contraseña donde los administradores pueden visualizar estadísticas de acceso.
--   **Visualización de Datos:** Gráficos que muestran los registros de acceso por día y la proporción de accesos faciales vs. manuales.
+-   **Separación de Roles:** La aplicación se divide en dos interfaces claras: una para el registro de fichajes de los operarios y otra para la administración.
+-   **Registro de Fichaje Facial:** Utiliza la cámara del dispositivo para identificar al operario y registrar su ingreso o egreso de forma automática.
+-   **Fallback de Fichaje Manual:** Si el reconocimiento facial falla, el sistema ofrece la opción de registrar el ingreso/egreso manualmente con el código de operario y DNI.
+-   **Panel de Administración Centralizado:** Una sección protegida por contraseña donde los administradores pueden gestionar operarios y visualizar estadísticas avanzadas.
+    -   **Gestión de Operarios:** Permite registrar nuevos operarios, incluyendo la captura de su descriptor facial.
+    -   **Visualización de Datos Mejorada:** Incluye gráficos interactivos para un análisis completo:
+        -   Registros de acceso por día (ingresos vs. egresos).
+        -   Proporción de accesos faciales vs. manuales.
+        -   **Nuevo:** Horas trabajadas por operario en un día específico.
+        -   **Nuevo:** Distribución de horarios de llegada para analizar la puntualidad.
+        -   **Nuevo:** Distribución de horarios de salida.
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -68,7 +74,7 @@ Siga estos pasos para configurar y ejecutar el proyecto en su entorno local.
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ```
 
-5.  **(Opcional) Crear un usuario administrador:** Para acceder al panel de administración, inserte un usuario con el rol de `admin`. Use su DNI como contraseña.
+5.  **(Requerido) Crear un usuario administrador:** Para acceder al panel de administración (y poder registrar nuevos operarios), es necesario crear un usuario con el rol de `admin`. El DNI que especifique aquí será la contraseña para el login de administrador.
 
     ```sql
     INSERT INTO `usuarios` (opCode, name, dni, descriptor, rol) 
@@ -86,15 +92,15 @@ Siga estos pasos para configurar y ejecutar el proyecto en su entorno local.
 
 ```
 .
-├── admin.php               # Página del panel de administración
+├── admin.php               # Panel de admin (login, gestión de operarios y estadísticas)
 ├── css/
 │   ├── admin.css           # Estilos para el panel de admin
-│   └── styles.css          # Estilos principales
-├── index.html              # Página principal de la aplicación
+│   └── styles.css          # Estilos para la interfaz de operarios
+├── index.html              # Página principal para el fichaje de operarios (facial y manual)
 ├── js/
-│   ├── admin.js            # Lógica para el panel de admin (gráficos)
+│   ├── admin.js            # Lógica para el panel de admin (registro de usuarios, gráficos)
 │   ├── face-api.min.js     # Librería de reconocimiento facial
-│   └── script.js           # Lógica principal (registro, login/logout facial)
+│   └── script.js           # Lógica para el fichaje de operarios
 ├── models/                 # Modelos pre-entrenados para face-api.js
 └── src/
     └── backend.php         # Endpoint PHP que maneja toda la lógica del servidor
@@ -102,15 +108,22 @@ Siga estos pasos para configurar y ejecutar el proyecto en su entorno local.
 
 ## ⚙️ ¿Cómo Funciona?
 
-### Registro de Usuario
-1.  El usuario navega a la pantalla de registro.
-2.  Al presionar "Tomar Foto", `face-api.js` detecta un rostro en el stream de la cámara y genera un **descriptor facial** (un array de 128 números que representa las características únicas del rostro).
-3.  Este descriptor, junto con los datos del formulario, se envía al `backend.php`.
-4.  El backend inserta un nuevo registro en la tabla `usuarios`, guardando el descriptor como un string JSON.
+### Flujo del Operario: Fichaje de Ingreso/Egreso
+1.  El operario accede a `index.html` y elige si desea registrar un ingreso o un egreso.
+2.  La aplicación activa la cámara y utiliza `face-api.js` para buscar una coincidencia facial contra los descriptores de los usuarios registrados en la base de datos.
+3.  Si encuentra una coincidencia con una confianza suficiente, identifica al operario y envía una petición al backend para registrar el acceso (`ingreso` o `egreso`) en la tabla `accesos`.
+4.  Si el reconocimiento facial falla tras unos segundos, el sistema redirige automáticamente a una pantalla para el registro manual, donde el operario puede identificarse con su código y DNI.
 
-### Login/Logout Facial
-1.  Al iniciar el proceso de login, el frontend solicita al backend la lista completa de usuarios registrados (`getUsers`).
-2.  `face-api.js` crea un `FaceMatcher` con los descriptores de todos los usuarios.
-3.  La aplicación escanea el video de la cámara en tiempo real. Por cada rostro detectado, calcula su descriptor y lo compara con el `FaceMatcher`.
-4.  Si encuentra una coincidencia con una confianza suficiente, identifica al usuario y envía una petición al backend para registrar el acceso (`ingreso` o `egreso`) en la tabla `accesos`.
-5.  Si no se detecta a nadie en 5 segundos, se redirige al flujo de registro manual.
+### Flujo del Administrador: Gestión y Estadísticas
+1.  **Login de Administrador:** El administrador navega a `admin.php` e inicia sesión utilizando su código de operario y DNI (previamente configurado en la base de datos con el rol `admin`).
+2.  **Registro de Nuevos Operarios:**
+    -   Dentro del panel, el administrador accede a la sección de registro.
+    -   Completa los datos del nuevo operario (código, nombre, DNI).
+    -   Usa la cámara para capturar el rostro del operario y generar su **descriptor facial** (un array de 128 flotantes que representa unívocamente el rostro).
+    -   El backend recibe estos datos y los guarda en la tabla `usuarios`.
+3.  **Visualización de Gráficos:** El panel de administrador carga y muestra automáticamente los siguientes gráficos generados con `Chart.js`:
+    -   **Accesos por Día:** Un gráfico de barras que compara el número de ingresos y egresos para cada día.
+    -   **Tipo de Acceso:** Un gráfico de dona que muestra el porcentaje de fichajes realizados por reconocimiento facial frente a los manuales.
+    -   **Horas Trabajadas:** Un gráfico de barras que desglosa las horas trabajadas por cada empleado en la jornada actual.
+    -   **Distribución de Llegadas/Salidas:** Gráficos de línea que muestran a qué horas se concentran los ingresos y egresos, permitiendo analizar patrones de puntualidad y ausentismo.
+
