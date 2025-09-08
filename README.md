@@ -9,12 +9,13 @@ Este proyecto es un prototipo funcional de un sistema de control de acceso que u
 -   **Fallback de Fichaje Manual:** Si el reconocimiento facial falla, el sistema ofrece la opción de registrar el ingreso/egreso manualmente con el código de operario y DNI.
 -   **Panel de Administración Centralizado:** Una sección protegida por contraseña donde los administradores pueden gestionar operarios y visualizar estadísticas avanzadas.
     -   **Gestión de Operarios:** Permite registrar nuevos operarios, incluyendo la captura de su descriptor facial.
-    -   **Visualización de Datos Mejorada:** Incluye gráficos interactivos para un análisis completo:
-        -   Registros de acceso por día (ingresos vs. egresos).
+    -   **Tabla de Reportes:** Visualización de todos los registros de acceso en una tabla paginada, con opciones para buscar, filtrar y exportar los datos.
+    -   **Visualización de Datos Mejorada:** Incluye gráficos interactivos para un análisis completo, con la posibilidad de filtrar los datos por día:
+        -   Registros de acceso (ingresos vs. egresos).
         -   Proporción de accesos faciales vs. manuales.
-        -   **Nuevo:** Horas trabajadas por operario (calculadas a partir de la diferencia entre el ingreso y el egreso del mismo registro).
-        -   **Nuevo:** Distribución de horarios de llegada para analizar la puntualidad.
-        -   **Nuevo:** Distribución de horarios de salida.
+        -   Horas trabajadas por operario.
+        -   Distribución de horarios de llegada para analizar la puntualidad.
+        -   Distribución de horarios de salida.
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -88,6 +89,21 @@ Siga estos pasos para configurar y ejecutar el proyecto en su entorno local.
     -   Por lo general, la ruta es `C:/xampp/htdocs/`.
 2.  El archivo de conexión a la base de datos `src/backend.php` está preconfigurado para un entorno XAMPP estándar (`host: "localhost"`, `user: "root"`, `pass: ""`). Si su configuración es diferente, modifique estas variables.
 3.  Abra su navegador y vaya a `http://localhost/NOMBRE_DE_LA_CARPETA_DEL_PROYECTO/`.
+
+## ☁️ Despliegue en Producción
+
+Este proyecto ha sido desplegado exitosamente en un entorno de producción utilizando los siguientes servicios:
+
+-   **Hosting:** [InfinityFree](https://www.infinityfree.net/), un proveedor de hosting web gratuito que soporta PHP y MySQL.
+-   **Base de Datos:** Se utiliza una base de datos MySQL gestionada a través de **phpMyAdmin**, que viene integrado con el panel de control de InfinityFree.
+
+### Consideraciones para el Despliegue
+
+1.  **Subida de Archivos:** Los archivos del proyecto se suben al directorio `htdocs` del servidor de InfinityFree a través de un cliente FTP (como FileZilla) o el administrador de archivos online que proveen.
+2.  **Configuración de la Base de Datos:**
+    -   Desde el panel de control de InfinityFree, se crea una nueva base de datos MySQL. El panel proporcionará el **host**, **nombre de la base de datos**, **usuario** y **contraseña**.
+    -   Es necesario actualizar el archivo `src/backend.php` con estas nuevas credenciales para que la aplicación pueda conectarse a la base de datos en producción.
+3.  **Importación de la Estructura:** Se utiliza la herramienta **phpMyAdmin** para importar el script SQL y crear la estructura de tablas (`usuarios`, `accesos`) en la base de datos de producción. No olvide crear el usuario administrador.
 
 ## 📁 Estructura del Proyecto
 
