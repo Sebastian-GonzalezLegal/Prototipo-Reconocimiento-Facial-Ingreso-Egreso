@@ -9,7 +9,7 @@ Este proyecto es un prototipo funcional de un sistema de control de acceso que u
 -   **Fallback de Fichaje Manual:** Si el reconocimiento facial falla, el sistema ofrece la opción de registrar el ingreso/egreso manualmente con el código de operario y DNI.
 -   **Panel de Administración Centralizado:** Una sección protegida por contraseña donde los administradores pueden gestionar operarios y visualizar estadísticas avanzadas.
     -   **Gestión de Operarios:** Permite registrar nuevos operarios, incluyendo la captura de su descriptor facial.
-    -   **Tabla de Reportes:** Visualización de todos los registros de acceso en una tabla paginada, con opciones para buscar, filtrar y exportar los datos.
+    -   **Tabla de Reportes:** Visualización de todos los registros de acceso en una tabla paginada, con la posibilidad de visualizar las llegadas tarde, las salidas tempranas y las horas extras de los empleados.
     -   **Visualización de Datos Mejorada:** Incluye gráficos interactivos para un análisis completo, con la posibilidad de filtrar los datos por día:
         -   Registros de acceso (ingresos vs. egresos).
         -   Proporción de accesos faciales vs. manuales.
