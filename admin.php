@@ -17,35 +17,76 @@ $is_admin = isset($_SESSION['isAdmin']) && $_SESSION['isAdmin'] === true;
 
         <!-- Contenido del Panel (si la sesión es de admin) -->
         <div id="panel-container">
-            <div class="admin-header">
-                <button id="register-button" class="btn btn-primary btn-register">Registrar Operario</button>
+             <div class="admin-header">
+                <button id="register-button" class="btn btn-primary btn-register">Registrar Operario</button> 
                 <h1>Panel de Administrador</h1>
                 <button id="admin-logout-button" class="btn btn-primary">Cerrar Sesión</button>
             </div>
 
-            <div class="chart-container">
-                <h2>Registros de Acceso por Día</h2>
-                <canvas id="acceso-por-dia"></canvas>
-            </div>
+            <!-- Contenedor de Gráficos (pantalla principal) -->
+            <div id="charts-screen">
+                <!-- Controles de Fecha -->
+                <div id="date-controls-container">
+                    <button id="report-button" class="btn btn-secondary">Ver Reporte</button>
+                    <button id="prev-day-button" class="btn btn-secondary">&lt; Anterior</button>
+                    <input type="date" id="date-selector" class="date-input">
+                    <button id="next-day-button" class="btn btn-secondary">Siguiente &gt;</button>
+                    <button id="today-button" class="btn btn-tertiary">Hoy</button>
+                </div>
 
-            <div class="chart-container">
-                <h2>Tipo de Acceso (Facial vs. Manual)</h2>
-                <canvas id="acceso-por-tipo"></canvas>
-            </div>
+                <div class="chart-container">
+                    <h2>Registros de Acceso por Día</h2>
+                    <canvas id="acceso-por-dia"></canvas>
+                </div>
 
-            <div class="chart-container">
-                <h2>Horas Trabajadas por Empleado y Día</h2>
-                <canvas id="horas-trabajadas"></canvas>
-            </div>
+                <div class="chart-container">
+                    <h2>Tipo de Acceso (Facial vs. Manual)</h2>
+                    <canvas id="acceso-por-tipo"></canvas>
+                </div>
 
-            <div class="chart-container">
-                <h2>Distribución de Horarios de Llegada</h2>
-                <canvas id="horarios-llegada"></canvas>
-            </div>
+                <div class="chart-container">
+                    <h2>Horas Trabajadas por Empleado y Día</h2>
+                    <canvas id="horas-trabajadas"></canvas>
+                </div>
 
-            <div class="chart-container">
-                <h2>Distribución de Horarios de Salida</h2>
-                <canvas id="horarios-salida"></canvas>
+                <div class="chart-container">
+                    <h2>Distribución de Horarios de Llegada</h2>
+                    <canvas id="horarios-llegada"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h2>Distribución de Horarios de Salida</h2>
+                    <canvas id="horarios-salida"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pantalla de Reporte Mensual -->
+        <div id="report-screen" class="screen" style="display: none;">
+            <div class="report-container">
+                <h2>Reporte de Fichajes por Mes</h2>
+                <div id="report-controls-container">
+                    <label for="month-selector">Seleccionar Mes:</label>
+                    <input type="month" id="month-selector" class="date-input">
+                </div>
+                <table id="employee-report-table">
+                    <thead>
+                        <tr>
+                            <th>Código de Operario</th>
+                            <th>Nombre</th>
+                            <th>Llegadas Tarde</th>
+                            <th>Salidas Tempranas</th>
+                            <th>Faltas</th>
+                            <th>Horas Extras</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employee-report-body">
+                        <!-- Las filas se insertarán aquí dinámicamente -->
+                    </tbody>
+                </table>
+                <div class="button-group">
+                    <button class="back-button btn btn-tertiary">Volver</button>
+                </div>
             </div>
         </div>
 
@@ -91,6 +132,7 @@ $is_admin = isset($_SESSION['isAdmin']) && $_SESSION['isAdmin'] === true;
     
     <footer>
         <p>&copy; 2025 Control de Ingreso/Egreso. Todos los derechos reservados.</p>
+        <p>Cod: 001, Password: 44448785</p>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

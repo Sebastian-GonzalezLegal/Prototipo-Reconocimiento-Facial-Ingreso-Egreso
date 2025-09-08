@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminLoginError = document.getElementById('admin-login-error');
 
     const registerButton = document.getElementById('register-button');
+    const reportButton = document.getElementById('report-button');
     const registerUserButton = document.getElementById('register-user-button');
     const captureButton = document.getElementById('capture-button');
     const backButtons = document.querySelectorAll('.back-button');
@@ -14,33 +15,63 @@ document.addEventListener('DOMContentLoaded', () => {
     const opCodeInput = document.getElementById('op-code');
     const nameInput = document.getElementById('name');
     const dniInput = document.getElementById('dni');
-
     const videoRegister = document.getElementById('video-register');
+
+    // Elementos de control de fecha
+    const dateSelector = document.getElementById('date-selector');
+    const prevDayButton = document.getElementById('prev-day-button');
+    const nextDayButton = document.getElementById('next-day-button');
+    const todayButton = document.getElementById('today-button');
+
+    // Elementos del reporte mensual
+    const monthSelector = document.getElementById('month-selector');
+    const employeeReportBody = document.getElementById('employee-report-body');
 
     // ===== VARIABLES =====
     let capturedDescriptor = null;
     let modelsLoaded = false;
-    let accessLogsChart = null;
-    let accessTypeChart = null;
-    let hoursWorkedChart = null;
-    let arrivalDistributionChart = null;
-    let departureDistributionChart = null;
+    let accessLogsChart, accessTypeChart, hoursWorkedChart, arrivalDistributionChart, departureDistributionChart;
     const chartTextColor = '#e0e0e0';
+    let currentDate = new Date();
 
     // ===== FUNCIONES =====
-    function showScreen(screenId) {
-        // Ocultar todas las "screens" y "chart-container"
-        const screens = document.querySelectorAll('.screen, #panel-container > .chart-container');
-        screens.forEach(s => s.style.display = 'none');
 
-        if (screenId === 'register-screen') {
-            document.getElementById('register-screen').style.display = 'block';
-            document.getElementById('register-button').style.display = 'none';
+    // --- Funciones de Utilidad de Fecha ---
+    const toISODateString = (date) => {
+        return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+    };
+
+    const isSameDay = (date1, date2) => {
+        return date1.getFullYear() === date2.getFullYear() &&
+               date1.getMonth() === date2.getMonth() &&
+               date1.getDate() === date2.getDate();
+    };
+    
+    function updateDateControls() {
+        if (!dateSelector) return;
+        dateSelector.value = toISODateString(currentDate);
+        nextDayButton.disabled = isSameDay(currentDate, new Date());
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        prevDayButton.disabled = currentDate <= thirtyDaysAgo;
+    }
+
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+        document.getElementById('charts-screen').style.display = 'none';
+
+        const mainButtons = [registerButton, reportButton];
+        mainButtons.forEach(btn => btn.style.display = 'inline-block');
+
+        if (screenId === 'charts-screen') {
+            document.getElementById('charts-screen').style.display = 'block';
+        } else if (screenId === 'report-screen') {
+            document.getElementById('report-screen').style.display = 'block';
+            mainButtons.forEach(btn => btn.style.display = 'none');
+        } else if (screenId === 'register-screen') {
+            document.getElementById(screenId).style.display = 'block';
+            mainButtons.forEach(btn => btn.style.display = 'none');
             startCamera(videoRegister);
-        } else if (screenId === 'charts-screen') {
-            document.querySelectorAll('#panel-container .chart-container').forEach(c => c.style.display = 'block');
-            document.getElementById('register-button').style.display = 'block';
-            stopCamera(videoRegister);
         }
     }
 
@@ -73,72 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ===== CAPTURA DE FOTO =====
-    if (captureButton) {
-        captureButton.addEventListener('click', async () => {
-            captureButton.textContent = 'Procesando...';
-            await new Promise(r => setTimeout(r, 50));
-            const detections = await faceapi.detectSingleFace(videoRegister, new faceapi.TinyFaceDetectorOptions())
-                .withFaceLandmarks().withFaceDescriptor();
-            if (detections) {
-                capturedDescriptor = detections.descriptor;
-                captureButton.textContent = 'Foto Capturada ✓';
-                captureButton.style.backgroundColor = '#28a745';
-                showMessage('Foto capturada exitosamente.', 'success');
-            } else {
-                captureButton.textContent = 'Tomar Foto';
-                captureButton.style.backgroundColor = '#007bff';
-                showMessage('No se detectó ningún rostro.', 'error');
-            }
-        });
-    }
-
-    // ===== REGISTRO DE USUARIO =====
-    if (registerUserButton) {
-        registerUserButton.addEventListener('click', async () => {
-            const opCode = opCodeInput.value;
-            const name = nameInput.value;
-            const dni = dniInput.value;
-
-            if (!opCode || !name || !dni) return showMessage('Complete todos los campos.', 'error');
-            if (!capturedDescriptor) return showMessage('Capture una foto primero.', 'error');
-
-            try {
-                const response = await fetch('src/backend.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({
-                        action: 'register',
-                        opCode,
-                        name,
-                        dni,
-                        descriptor: JSON.stringify(Array.from(capturedDescriptor))
-                    })
-                });
-                const data = await response.json();
-                if (data.status === 'success') {
-                    showMessage(`Usuario ${name} registrado.`, 'success');
-                    resetRegistrationForm();
-                    showScreen('charts-screen');
-                } else {
-                    showMessage('Error al registrar: ' + data.msg, 'error');
-                }
-            } catch (err) {
-                console.error(err);
-                showMessage('Error de conexión al servidor.', 'error');
-            }
-        });
-    }
-
-    // ===== NAVEGACIÓN REGISTRO =====
-    if (registerButton) {
-        registerButton.addEventListener('click', () => showScreen('register-screen'));
-    }
-    backButtons.forEach(btn => btn.addEventListener('click', () => {
-        resetRegistrationForm();
-        showScreen('charts-screen');
-    }));
-
     // ===== CARGA MODELOS FACE API =====
     async function loadFaceApiModels() {
         const MODEL_URL = './models';
@@ -156,14 +121,28 @@ document.addEventListener('DOMContentLoaded', () => {
     loadFaceApiModels();
 
     // ===== GRÁFICOS =====
-    async function renderCharts() {
+    async function renderCharts(date) {
+        const dateString = toISODateString(date);
+        const commonOptions = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        };
+
         try {
-            const logsRes = await fetch('src/backend.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ action: 'getAccessLogsPerDay' })
-            });
-            const logsData = await logsRes.json();
+            const fetchData = async (action) => {
+                const body = new URLSearchParams({ action, date: dateString });
+                const response = await fetch('src/backend.php', { ...commonOptions, body });
+                return response.json();
+            };
+
+            const [logsData, typeData, hoursData, arrivalData, departureData] = await Promise.all([
+                fetchData('getAccessLogsPerDay'),
+                fetchData('getAccessLogsByType'),
+                fetchData('getHoursWorkedPerDay'),
+                fetchData('getArrivalDistribution'),
+                fetchData('getDepartureDistribution')
+            ]);
+            
             if (logsData.status === 'success') {
                 const ctx = document.getElementById('acceso-por-dia').getContext('2d');
                 if (accessLogsChart) accessLogsChart.destroy();
@@ -172,24 +151,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     data: {
                         labels: logsData.data.labels,
                         datasets: [
-                            { label: 'Ingresos', data: logsData.data.ingresos, backgroundColor: 'rgba(75, 192, 192, 0.5)' },
-                            { label: 'Egresos', data: logsData.data.egresos, backgroundColor: 'rgba(255, 99, 132, 0.5)' }
+                            { label: 'Ingresos', data: logsData.data.ingresos, backgroundColor: 'rgba(75, 192, 192, 0.7)' },
+                            { label: 'Egresos', data: logsData.data.egresos, backgroundColor: 'rgba(255, 99, 132, 0.7)' }
                         ]
                     },
-                    options: {
-                        scales: { y: { beginAtZero: true, ticks: { color: chartTextColor } }, x: { ticks: { color: chartTextColor } } },
-                        plugins: { legend: { labels: { color: chartTextColor } } }
-                    }
+                    options: { scales: { y: { beginAtZero: true, ticks: { color: chartTextColor, stepSize: 1 } }, x: { ticks: { color: chartTextColor } } }, plugins: { legend: { labels: { color: chartTextColor } } } }
                 });
             }
 
-            // Access Type
-            const typeRes = await fetch('src/backend.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ action: 'getAccessLogsByType' })
-            });
-            const typeData = await typeRes.json();
             if (typeData.status === 'success') {
                 const ctx = document.getElementById('acceso-por-tipo').getContext('2d');
                 if (accessTypeChart) accessTypeChart.destroy();
@@ -197,24 +166,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     type: 'doughnut',
                     data: {
                         labels: typeData.data.labels,
-                        datasets: [{
-                            label: 'Tipo de Acceso',
-                            data: typeData.data.values,
-                            backgroundColor: ['rgba(54, 162, 235, 0.5)', 'rgba(255, 206, 86, 0.5)'],
-                            borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)']
-                        }]
+                        datasets: [{ data: typeData.data.values, backgroundColor: ['rgba(54, 162, 235, 0.7)', 'rgba(255, 206, 86, 0.7)'] }]
                     },
                     options: { plugins: { legend: { labels: { color: chartTextColor } } } }
                 });
             }
 
-            // Horas Trabajadas
-            const hoursRes = await fetch('src/backend.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ action: 'getHoursWorkedPerDay' })
-            });
-            const hoursData = await hoursRes.json();
             if (hoursData.status === 'success') {
                 const ctx = document.getElementById('horas-trabajadas').getContext('2d');
                 if (hoursWorkedChart) hoursWorkedChart.destroy();
@@ -226,30 +183,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     },
                     options: {
                         scales: { y: { beginAtZero: true, ticks: { color: chartTextColor } }, x: { ticks: { color: chartTextColor } } },
-                        plugins: {
-                            legend: { labels: { color: chartTextColor } },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        let label = context.dataset.label || '';
-                                        if (label) { label += ': '; }
-                                        if (context.parsed.y !== null) { label += context.parsed.y.toFixed(2) + ' horas'; }
-                                        return label;
-                                    }
-                                }
-                            }
-                        }
+                        plugins: { legend: { labels: { color: chartTextColor } }, tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.parsed.y.toFixed(2)} horas` } } }
                     }
                 });
             }
 
-            // Distribución de Llegadas
-            const arrivalRes = await fetch('src/backend.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ action: 'getArrivalDistribution' })
-            });
-            const arrivalData = await arrivalRes.json();
             if (arrivalData.status === 'success') {
                 const ctx = document.getElementById('horarios-llegada').getContext('2d');
                 if (arrivalDistributionChart) arrivalDistributionChart.destroy();
@@ -257,22 +195,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     type: 'line',
                     data: {
                         labels: arrivalData.data.labels,
-                        datasets: [{ label: 'Cantidad de Empleados', data: arrivalData.data.values, backgroundColor: 'rgba(255, 159, 64, 0.5)', fill: true }]
+                        datasets: [{ label: 'Cantidad', data: arrivalData.data.values, backgroundColor: 'rgba(255, 159, 64, 0.5)', borderColor: 'rgba(255, 159, 64, 1)', fill: true }]
                     },
-                    options: {
-                        scales: { y: { beginAtZero: true, ticks: { color: chartTextColor, stepSize: 1 } }, x: { ticks: { color: chartTextColor } } },
-                        plugins: { legend: { labels: { color: chartTextColor } } }
-                    }
+                    options: { scales: { y: { beginAtZero: true, ticks: { color: chartTextColor, stepSize: 1 } }, x: { ticks: { color: chartTextColor } } }, plugins: { legend: { labels: { color: chartTextColor } } } }
                 });
             }
 
-            // Distribución de Salidas
-            const departureRes = await fetch('src/backend.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ action: 'getDepartureDistribution' })
-            });
-            const departureData = await departureRes.json();
             if (departureData.status === 'success') {
                 const ctx = document.getElementById('horarios-salida').getContext('2d');
                 if (departureDistributionChart) departureDistributionChart.destroy();
@@ -280,20 +208,56 @@ document.addEventListener('DOMContentLoaded', () => {
                     type: 'line',
                     data: {
                         labels: departureData.data.labels,
-                        datasets: [{ label: 'Cantidad de Empleados', data: departureData.data.values, backgroundColor: 'rgba(201, 203, 207, 0.5)', fill: true }]
+                        datasets: [{ label: 'Cantidad', data: departureData.data.values, backgroundColor: 'rgba(201, 203, 207, 0.5)', borderColor: 'rgba(201, 203, 207, 1)', fill: true }]
                     },
-                    options: {
-                        scales: { y: { beginAtZero: true, ticks: { color: chartTextColor, stepSize: 1 } }, x: { ticks: { color: chartTextColor } } },
-                        plugins: { legend: { labels: { color: chartTextColor } } }
-                    }
+                    options: { scales: { y: { beginAtZero: true, ticks: { color: chartTextColor, stepSize: 1 } }, x: { ticks: { color: chartTextColor } } }, plugins: { legend: { labels: { color: chartTextColor } } } }
                 });
             }
         } catch (err) {
             console.error('Error renderizando gráficos:', err);
         }
     }
+    
+    // --- Reporte de Empleados ---
+    async function renderEmployeeReport(month) {
+        if (!employeeReportBody) return;
+        
+        try {
+            const response = await fetch('src/backend.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ action: 'getEmployeeReport', month })
+            });
+            const result = await response.json();
 
-    // ===== LOGIN =====
+            employeeReportBody.innerHTML = '';
+
+            if (result.status === 'success' && result.data.length > 0) {
+                result.data.forEach(employee => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${employee.opCode}</td>
+                        <td>${employee.name}</td>
+                        <td>${employee.llegadas_tarde}</td>
+                        <td>${employee.salidas_tempranas}</td>
+                        <td>${employee.faltas}</td>
+                        <td>${employee.horas_extras.toFixed(2)}</td>
+                    `;
+                    employeeReportBody.appendChild(row);
+                });
+            } else if (result.status === 'success') {
+                employeeReportBody.innerHTML = '<tr><td colspan="6">No hay datos para el mes seleccionado.</td></tr>';
+            } else {
+                employeeReportBody.innerHTML = `<tr><td colspan="6">Error: ${result.msg || 'No se pudo cargar el reporte.'}</td></tr>`;
+            }
+        } catch (err) {
+            console.error('Error renderizando el reporte de empleados:', err);
+            employeeReportBody.innerHTML = '<tr><td colspan="5">Error de conexión al cargar el reporte.</td></tr>';
+        }
+    }
+
+    // ===== MANEJO DE EVENTOS =====
+
     if (adminLoginButton) {
         adminLoginButton.addEventListener('click', async () => {
             const opCode = adminOpCodeInput.value;
@@ -306,11 +270,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: new URLSearchParams({ action: 'adminLogin', opCode, dni })
                 });
                 const data = await res.json();
-                if (data.status === 'success') {
-                    location.reload();
-                } else {
-                    adminLoginError.textContent = data.msg || 'Error en login.';
-                }
+                if (data.status === 'success') location.reload();
+                else adminLoginError.textContent = data.msg || 'Error en login.';
             } catch (err) {
                 console.error(err);
                 adminLoginError.textContent = 'Error de conexión.';
@@ -318,7 +279,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ===== LOGOUT =====
     if (adminLogoutButton) {
         adminLogoutButton.addEventListener('click', async () => {
             try {
@@ -334,9 +294,106 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- Navegación entre pantallas ---
+    if (registerButton) registerButton.addEventListener('click', () => showScreen('register-screen'));
+    if (reportButton) reportButton.addEventListener('click', () => showScreen('report-screen'));
+    
+    backButtons.forEach(btn => btn.addEventListener('click', () => {
+        resetRegistrationForm();
+        stopCamera(videoRegister);
+        showScreen('charts-screen');
+    }));
+
+    if (captureButton) {
+        captureButton.addEventListener('click', async () => {
+            captureButton.textContent = 'Procesando...';
+            const detections = await faceapi.detectSingleFace(videoRegister, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+            if (detections) {
+                capturedDescriptor = detections.descriptor;
+                captureButton.textContent = 'Foto Capturada ✓';
+                captureButton.style.backgroundColor = '#28a745';
+                showMessage('Foto capturada exitosamente.', 'success');
+            } else {
+                captureButton.textContent = 'Tomar Foto';
+                captureButton.style.backgroundColor = '#007bff';
+                showMessage('No se detectó ningún rostro.', 'error');
+            }
+        });
+    }
+
+    if (registerUserButton) {
+        registerUserButton.addEventListener('click', async () => {
+            const opCode = opCodeInput.value, name = nameInput.value, dni = dniInput.value;
+            if (!opCode || !name || !dni) return showMessage('Complete todos los campos.', 'error');
+            if (!capturedDescriptor) return showMessage('Capture una foto primero.', 'error');
+
+            try {
+                const res = await fetch('src/backend.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ action: 'register', opCode, name, dni, descriptor: JSON.stringify(Array.from(capturedDescriptor)) })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showMessage(`Usuario ${name} registrado.`, 'success');
+                    resetRegistrationForm();
+                    showScreen('charts-screen');
+                } else {
+                    showMessage('Error al registrar: ' + data.msg, 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showMessage('Error de conexión al servidor.', 'error');
+            }
+        });
+    }
+    
+    // --- Controles de Fecha ---
+    if (dateSelector) {
+        dateSelector.addEventListener('change', () => {
+            const [year, month, day] = dateSelector.value.split('-').map(Number);
+            currentDate = new Date(year, month - 1, day);
+            updateDateControls();
+            renderCharts(currentDate);
+        });
+
+        prevDayButton.addEventListener('click', () => {
+            currentDate.setDate(currentDate.getDate() - 1);
+            updateDateControls();
+            renderCharts(currentDate);
+        });
+
+        nextDayButton.addEventListener('click', () => {
+            currentDate.setDate(currentDate.getDate() + 1);
+            updateDateControls();
+            renderCharts(currentDate);
+        });
+
+        todayButton.addEventListener('click', () => {
+            currentDate = new Date();
+            updateDateControls();
+            renderCharts(currentDate);
+        });
+    }
+
+    // --- Controles de Mes ---
+    if (monthSelector) {
+        monthSelector.addEventListener('change', () => {
+            renderEmployeeReport(monthSelector.value);
+        });
+    }
+
     // ===== INICIALIZACIÓN =====
     if (document.getElementById('panel-container')) {
-        renderCharts();       // Renderizar gráficos al cargar panel
-        showScreen('charts-screen'); // Mostrar solo gráficos
+        showScreen('charts-screen');
+        
+        // Inicializar controles de fecha y gráficos
+        updateDateControls();
+        renderCharts(currentDate);
+
+        // Inicializar controles de mes y reporte
+        const currentMonth = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');
+        monthSelector.value = currentMonth;
+        renderEmployeeReport(currentMonth);
     }
 });
