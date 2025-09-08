@@ -370,3 +370,44 @@ footer {
 #employee-report-table tbody tr:hover {
     background-color: #3f3f46;
 }
+
+/* ===== Responsive Report Table ===== */
+@media (max-width: 768px) {
+    #employee-report-table thead {
+        display: none;
+    }
+
+    #employee-report-table, #employee-report-table tbody, #employee-report-table tr, #employee-report-table td {
+        display: block;
+    }
+
+    #employee-report-table tr {
+        margin-bottom: 15px;
+        border: 1px solid #2a2a2d;
+        border-radius: 10px;
+        background-color: #18181b;
+    }
+
+    #employee-report-table td {
+        text-align: right;
+        position: relative;
+        border: none;
+        border-bottom: 1px solid #2a2a2d;
+    }
+    
+    #employee-report-table tr:last-child td:last-child {
+        border-bottom: none;
+    }
+
+    #employee-report-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 15px;
+        width: calc(50% - 30px);
+        padding-right: 10px;
+        white-space: nowrap;
+        text-align: left;
+        font-weight: 600;
+        color: #f9fafb;
+    }
+}

@@ -236,12 +236,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 result.data.forEach(employee => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td>${employee.opCode}</td>
-                        <td>${employee.name}</td>
-                        <td>${employee.llegadas_tarde}</td>
-                        <td>${employee.salidas_tempranas}</td>
-                        <td>${employee.faltas}</td>
-                        <td>${employee.horas_extras.toFixed(2)}</td>
+                        <td data-label="Código de Operario">${employee.opCode}</td>
+                        <td data-label="Nombre">${employee.name}</td>
+                        <td data-label="Llegadas Tarde">${employee.llegadas_tarde}</td>
+                        <td data-label="Salidas Tempranas">${employee.salidas_tempranas}</td>
+                        <td data-label="Faltas">${employee.faltas}</td>
+                        <td data-label="Horas Extras">${employee.horas_extras.toFixed(2)}</td>
                     `;
                     employeeReportBody.appendChild(row);
                 });
